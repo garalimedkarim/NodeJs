@@ -1,0 +1,11 @@
+Window,Screen,document :
+
+	Window is the main JavaScript object root, aka the global object in a browser, also can be treated as the root of the document object model. You can access it as window in most of the cases (in the browser);
+
+	window.screen is a small information object about physical screen dimensions.
+
+	window.document or just document is the main object of the visible (or better yet: rendered) document object model/DOM.
+	
+	Javasciript read html as Window Object :
+	window.screen => attribute obj about screen dimensions.
+	window.document => attribute obj contains the HTML.

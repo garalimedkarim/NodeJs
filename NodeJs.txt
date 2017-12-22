@@ -1,0 +1,21 @@
+01 : course introduction 
+	001: welcome to the course
+	002: project files questions :
+	
+02 : setting up
+	003: dev env setup
+	004: what is exactly node js:
+		there is three programming paradigms :
+			***Event Driven***
+			Object Oriented
+			Prodedural programming
+	005: installing exploring node js:
+		npm : node package manager
+		> global // window in frontend
+		> process.env.COMPUTERNAME 
+		creation du file1.js
+	006: install mongodb locally:
+		install .msi
+		>cd c:/mongodb/bin
+		> mongod --directoryperdb --dbpath C:\mongodb\data\db  --dbpath C:\mongodb
+\data\db --logpath C:\mongodb\log\mongo.log --logappend --rest --install

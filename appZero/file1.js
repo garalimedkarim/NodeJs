@@ -1,0 +1,1 @@
+console.log("Salam 3alaykom "+process.env.COMPUTERNAME);
