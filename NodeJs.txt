@@ -14,8 +14,36 @@
 		> global // window in frontend
 		> process.env.COMPUTERNAME 
 		creation du file1.js
+		> node file1 => exec
 	006: install mongodb locally:
 		install .msi
-		>cd c:/mongodb/bin
-		> mongod --directoryperdb --dbpath C:\mongodb\data\db  --dbpath C:\mongodb
-\data\db --logpath C:\mongodb\log\mongo.log --logappend --rest --install
+		creation de C:\mongodb\data\db
+		creation de C:\mongodb\log\mongo.log
+		> cd c:/mongodb/bin
+		> mongod --directoryperdb --dbpath C:\mongodb\data\db --logpath C:\mongodb\log\mongo.log --logappend --rest --install
+		> net start MongoDB
+		> mongo 
+		> show databases ;
+	007: sign up for mlab (mongo lab):
+		we need remote database for deployement for that we use the service mlab (the most trusted mongoDB deployement service)
+		* create a mlab account garalimedkarim4@gmail.com
+	
+	008: create heroku account:
+		* create heroku account garalimedkarim4@gmail mdp=
+	
+03 : vidjot project start express fundamentals:
+	009: vidjot project introduction:
+		overview on the application we are going to realize.
+	010: install initialize express :
+		Express : Framework NodeJs (request,response,creating routes,creating pages,configurations,templates,...)
+		* creation project folder "vidjot"
+		* cd in this folder
+		> npm init (setting app name,index file{app.js} author,name,app.js etc)
+		* installation de express:
+		> npm install --save express
+		*creation de app.js
+		> node app
+		
+		
+		
+		
