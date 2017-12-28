@@ -39,11 +39,130 @@
 		* creation project folder "vidjot"
 		* cd in this folder
 		> npm init (setting app name,index file{app.js} author,name,app.js etc)
-		* installation de express:
+		* installation de express dans le repertoire du projet:
 		> npm install --save express
-		*creation de app.js
+		*creation de app.js:
+			const express = require('express');
+			const app=express();
+			const port=5000;
+			app.listen(port,()=>{
+				console.log(`server started on port ${port}`);
+			});
 		> node app
+	011: basic routing nodemoon:
+		handle GET request:
+			const express = require('express');
+			const app=express();
+			// Index Route:
+			app.get("/",(req,res)=>{
+				res.send("INDEX");
+			});
+			// Index about:
+			app.get("/about",(req,res)=>{
+				res.send("ABOUT");
+			});
+			const port=5000;
+			app.listen(port,()=>{
+				console.log(`server started on port ${port}`);
+			});
+		Every change you have to restart the server >node app
+		Solution : NodeMoon 
+		> npm install -g nodemon
+		-g : global != local (local for this project, global for all project)
+		* to see the global folder => C:\Users\brad\AppData\Roaming\npm\node_modules
+		> npm root -g
+	012: express middleware:
+		* Simple Function that let you modifiy req and res
+		* Called Filters in other frameworks
+		*To add a middleware :
+			app.use(middleware_function(),next);
+		*Every use of middleware must containt next because middleware are serial executed :	
+			
+			app.use(function(req,res,next){
+				console.log(Date.now());
+				req.att_x="karim";
+				next();
+			})
+		types de middleware :
+			http://expressjs.com/fr/guide/using-middleware.html#middleware.application
+			
+		app.get("/",function1,function2,bye);
+		function1(req,res,next){ next(); }
+		function2(req,res,next){ next(); }
+		function bye(req,res,next){ res.end(); }
+ToDownload:
+	https://www.youtube.com/watch?v=-lRgL9kj_h0
+	https://www.youtube.com/watch?v=9HOem0amlyg
+	
+	013: working with templates:
+		handlebars=moteur de template de node
+		//
+		
+		//telling the systeme that we are going to use handlebars :
+			app.engine('handlebars', exphbs({defaultLayout: 'main'}));
+			app.set('view engine', 'handlebars');
+		* main : default-layout
+	014: bootstrap partials
+		bootstrap + front structure.
+		
+	015: install mongoose connect:
+		ORM: object relational mapping
+		ODM: object Document mapping
+		$ npm install --save mongoose
+		ggle: mongoose ORM (documentation)
+			const mongoose = require('mongoose');
+			// Connect to the local DB:
+			mongoose.Promise = global.Promise; //to became a promise object
+
+			mongoose.connect('mongodb://localhost/vidjot-db',{
+				useMongoClient: true // to evitate a warning
+			})
+			.then(function(){
+				console.log("MongoDB connected ...");
+			})
+			.catch(err => console.log(err));			
+	016: Create the idea Model :
+		* creating file models/Idea.js :
+			const mongoose = require('mongoose');
+			const Schema = mongoose.Schema;
+			//create Schema:
+			const IdeaSchema = new Schema({
+				title:{
+					type:String,
+					required:true
+				},
+				details:{
+					type:String,
+					required:true
+				},
+				date:{
+					type:Date,
+					default:Date.now
+				},
+			});
+			mongoose.model('ideas',IdeaSchema);		
+		* Instansiation dans app.js aprés connexion :
+			// Load Idea Model:
+			1)require('./models/Idea');
+			2)const Idea = mongoose.model('ideas');
+	017: add idea form:
+		* app.js : ajout du route 
+			// add Idea Route:
+			app.get("/ideas/add",(req,res)=>{
+				res.render("ideas/add");
+			});
+		* create the view views/ideas/add.handlebars
+			// bootstrap job
+		
+	
+	
 		
 		
+
+
+
+
 		
-		
+
+Android : 
+	https://app.barmej.com/tracks/%D8%A8%D8%B1%D9%85%D8%AC%D8%A9-%D8%AA%D8%B7%D8%A8%D9%8A%D9%82%D8%A7%D8%AA-%D8%A7%D9%84%D8%A3%D9%86%D8%AF%D8%B1%D9%88%D9%8A%D8%AF-Android

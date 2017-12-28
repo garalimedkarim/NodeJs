@@ -1,0 +1,2 @@
+
+<form> in HTML 5 doesn't support method put,delete

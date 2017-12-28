@@ -9,3 +9,41 @@ Window,Screen,document :
 	Javasciript read html as Window Object :
 	window.screen => attribute obj about screen dimensions.
 	window.document => attribute obj contains the HTML.
+	
+execute function after 3 sec :
+	 setTimeout(function(){ alert("Hello"); }, 3000);
+	 
+appel a un fonction déclaré au dessus ou au dessous => pas de probleme.
+
+let vs var : let moins scoped que var.
+	exple :
+		for(var i = 0; i<10; i++){} => the i will be shown outside the for bloc
+		for(let i = 0; i<10; i++){} => the i will not be shown outside the for bloc.
+
+//JavaScript Promises :
+Promise is an object that start executing its code and offer you 2 methods to execute after he finish its code which are "then()" and "catch"
+
+	let myFirstPromise = new Promise((resolve, reject) => { console.log('111')
+	  // We call resolve(...) when what we were doing asynchronously was successful, and reject(...) when it failed.
+	  // In this example, we use setTimeout(...) to simulate async code. 
+	  // In reality, you will probably be using something like XHR or an HTML5 API.
+		setTimeout(function(){
+			console.log('222');
+			resolve("Success!"); // Yay! Everything went well!
+			console.log("333");
+		}, 250);
+	});
+	console.log('444');
+
+	myFirstPromise.then((successMessage) => {
+	  console.log("555");
+	  // successMessage is whatever we passed in the resolve(...) function above.
+	  // It doesn't have to be a string, but if it is only a succeed message, it probably will be.
+	  console.log("Yay! " + successMessage);
+	  
+	}).catch(function(error){
+		console.log("Failed",error);
+	});
+
+	console.log('666');
+		
