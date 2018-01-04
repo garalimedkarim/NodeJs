@@ -23,7 +23,8 @@ let vs var : let moins scoped que var.
 //JavaScript Promises :
 Promise is an object that start executing its code and offer you 2 methods to execute after he finish its code which are "then()" and "catch"
 
-	let myFirstPromise = new Promise((resolve, reject) => { console.log('111')
+// Exemple Basic :
+	let myFirstPromise = new Promise((resolve, reject) => { console.log('111');
 	  // We call resolve(...) when what we were doing asynchronously was successful, and reject(...) when it failed.
 	  // In this example, we use setTimeout(...) to simulate async code. 
 	  // In reality, you will probably be using something like XHR or an HTML5 API.
@@ -46,4 +47,49 @@ Promise is an object that start executing its code and offer you 2 methods to ex
 	});
 
 	console.log('666');
+	
+// Exemple get Promise from exported file :
+//config global:
+* config/config.js:
+	const developpement = true;
+
+	const readline = require('readline');
+
+	const rl = readline.createInterface({
+	  input: process.stdin,
+	  output: process.stdout
+	});
+
+	if (!developpement)
+		module.exports = new Promise(res => {
+			rl.question('Run in production environnement (Y|N) ?', res);
+		}).then(answer => {       
+			if(answer === "Y")
+				process.env.NODE_ENV = 'prod';
+			else
+				process.env.NODE_ENV = 'dev';
+			rl.close();
+		});
+	else 
+		module.exports = new Promise(function(resolve,reject) {
+			resolve();
+		});
+* app.js:
+	config = require('./config/config');
+	config.then(function(resolve){
+		//DB config:
+		const db = require('./config/database');
+
+		//Connect to mongoose
+		mongoose.connect(db.mongoURI,{
+			useMongoClient: true
+		})
+		.then(function(){
+			console.log("MongoDB connected ...");
+		})
+		.catch(err => {
+			console.log("Mongo Connexion problem");
+			console.log(err);
+		});
+	
 		

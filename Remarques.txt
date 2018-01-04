@@ -1,2 +1,12 @@
 
-<form> in HTML 5 doesn't support method put,delete
+<form> in HTML 5 doesn't support method put,delete.
+
+//express-session module presentation:
+	Note Session data is not saved in the cookie itself, just the session ID. Session data is stored server-side.
+
+	Note Since version 1.5.0, the cookie-parser middleware no longer needs to be used for this module to work. This module now directly reads and writes cookies on req/res. Using cookie-parser may result in issues if the secret is not the same between this module and cookie-parser.
+
+	Warning The default server-side session storage, MemoryStore, is purposely not designed for a production environment. It will leak memory under most conditions, does not scale past a single process, and is meant for debugging and developing.
+	
+// When lunching the node app in the server, all middleware in used are loaded, and wait to be executed.
+=> When lunching the node app, module are exported once.

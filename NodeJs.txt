@@ -11,6 +11,7 @@
 			Prodedural programming
 	005: installing exploring node js:
 		npm : node package manager
+		* node // command line execute node
 		> global // window in frontend
 		> process.env.COMPUTERNAME 
 		creation du file1.js
@@ -152,17 +153,632 @@ ToDownload:
 				res.render("ideas/add");
 			});
 		* create the view views/ideas/add.handlebars
-			// bootstrap job
+			// bootstrap job 
+			
+	018: server side form validation:
+		* installation du middleware ""body-parser":
+		> npm install --save body-parser
+		
+		* app.js:
+		// top page : import lines add:
+		const bodyParser = require('body-parser');
+		// body parser middleware:
+			// parse application/x-www-form-urlencoded
+			app.use(bodyParser.urlencoded({ extended: false }));
+			// parse application/json
+			app.use(bodyParser.json());
+		// form handle :
+		app.post("/ideas",function(req,res){
+			let errors = [];
+			if (!req.body.title)
+				errors.push({text:'Please add a title'});
+			if (!req.body.details)
+				errors.push({text:'Please add a details'});
+			if (errors.length > 0)
+				res.render("ideas/add",{
+					errors: errors,
+					title: req.body.title,
+					details: req.body.details,
+				});
+			else
+				res.send("OK"+req.body.title);
+		});
+
+	019: saving idea to mongodb:
+		* app.js:
+		// Load Idea Model:
+		require('./models/Idea');
+		const Idea = mongoose.model('ideas');
+		
+		const newIdea= {
+			title: req.body.title,
+			details: req.body.details,
+		};
+		new Idea(newIdea)
+		.save()
+		.then(idea=>{
+			res.redirect("/ideas");
+		});
+
+		//MongoDB interface :
+		> show dbs;
+		> use vidjot-db
+		> show collections  // return ideas
+		> db.ideas.find();  // return all ideas
+	
+	020: fetching ideas from mongodb :
+		* app.js :
+		// Ideas index page:
+		app.get("/ideas",(req,res)=>{
+			// Load Idea Model:
+			require('./models/Idea');
+			const Idea = mongoose.model('ideas');						
+			Idea.find({})
+			.sort({date:'desc'})
+			.then(ideas=>{
+				res.render("ideas/index",{
+					ideas: ideas,
+				});
+			})			
+		});
+
+		* creation de views/ideas/index.handlebars:
+			{{#each ideas}}
+				<div class="card card-body mb-2">
+					<h4>{{title}}</h4>
+					<p>{{details}}</p>
+				</div>
+			{{else}}
+				<p> No Video </p>
+			{{/each}}
+
+	021: edit idea form:
+		* app.js :
+		// edit Idea form:
+		app.get("/ideas/edit/:id",(req,res)=>{
+			// Load Idea Model:
+			require('./models/Idea');
+			const Idea = mongoose.model('ideas');	
+			
+			Idea.findOne({
+				_id: req.params.id
+			})
+			.then(idea=> {
+				res.render("ideas/edit",{
+					idea: idea,
+				});	
+			});
+		});
+
+		*creation views/ideas/edit.handlebars.
+	
+	022: update idea data:
+		we want to create put method action but html5 doesn't support it. So we are going to set method=post then override it in server side to "put".
+		> npm install --save method-override
+		* app.js:
+		//top of the file:
+		//require method-override must be required before any middleware using requests:
+		const methodOverride = require('method-override');
+		
+		//override with POST having ?_method=DELETE:
+		app.use(methodOverride('_method'));		
+		//simple PUT Route:
+		app.put("/ideas/:id",(req,res)=>{
+			// Load Idea Model:
+			require('./models/Idea');
+			const Idea = mongoose.model('ideas');	
+
+			Idea.findOne({
+				"_id":req.params.id,
+			})
+			.then(idea=>{
+				// editing idea object
+				idea.title = req.body.title;
+				idea.details = req.body.details;
+				// persisting object:
+				idea.save()
+				.then(idea=>{
+					res.redirect("/ideas");
+				});
+				
+			});
+		});
+
+		*views/ideas/edit : 
+		// adding some attribute in the url that middleware requires:
+			<form action="/ideas/{{idea.id}}?_method=PUT" method="post">
+	023: remove idea data:
+		//Override the http method post by delete with the same process. 
+		*app.js :
+			// delete idea:
+			app.delete("/ideas/:id",(req,res)=>{
+				// Load Idea Model:
+				require('./models/Idea');
+				const Idea = mongoose.model('ideas');
+
+				Idea.remove({_id: req.params.id})
+				.then(()=>{
+					res.redirect("/ideas");
+				})
+			});
+		*views/ideas/index.handlebars:
+			//adding delete form to each block:
+			<a href="/ideas/edit/{{id}}" class="btn btn-dark btn-block mb-2"> Edit </a>
+			<form method="POST" action="/ideas/{{id}}?_method=DELETE">
+					<input type="submit" class="btn btn-danger btn-block" value="DELETE">
+			</form>
+	
+	024: flash messaging :
+		* install 2 middlewares :
+		> npm install express-session connect-flash --save
+
+		* app.js
+		//Express session middleware :
+		app.use(session({
+		  secret: 'mySecret',
+		  resave: true,
+		  saveUninitialized: true,
+		  //cookie: { secure: true }
+		}));
+
+		//Connect flash middleware:
+		app.use(flash());
+
+		// Setting Global variables:
+		app.use(function(req,res,next){
+			res.locals.success_msg = req.flash("success_msg");
+			res.locals.error_msg = req.flash("error_msg");
+			res.locals.error = req.flash("error");
+			next();
+		});
+		
+		//adding flash message when persisting Data:
+			req.flash("success_msg","Video Idea Re
+		moved");
+
+		* creation de views/partials/_msg.handlebars:
+			{{#if success_msg }}
+				<div class="alert alert-success">
+					{{success_msg}}
+				</div>
+			{{/if}}
+
+			{{#if error_msg }}
+				<div class="alert alert-danger">
+					{{error_msg}}
+				</div>
+			{{/if}}	
+		* include it in main :
+			{{> _msg}}
+	
+	025: a look at passport:
+		Overview in www.passportjs.org
+		
+	026: the express router:
+		*Using the router of express framework.
+		*Used to clean app.js from routes.
+		*creation of routes/ideas.js:
+			const express = require("express");
+			const mongoose = require("mongoose");
+			
+			const router = express.Router();
+			// ----------------------------------------
+			
+			// copying every routes starting with /ideas/ from app.js to this file.
+			// replacing app.get(...) by router.get(...)
+			// the prefix of the route is /ideas so clean the routes from the prefix.
+			
+			// ----------------------------------------
+			module.exports = router;
+		*app.js :
+			// load routes :
+			const ideas = require("./routes/ideas");
+			const users = require("./routes/users");
+			// Use routes :
+			app.use("/ideas",ideas);
+			app.use("/users",users);			
+	
+	027: Login register pages : 
+		*app.js:
+			// Using path of express but it isn't utile right now:
+			//const path = require("path");
+			
+			// Static folder Set:
+			//app.use(express.static(path.join(__dirname,'public')));
+			app.use(express.static('public'));
+		
+		* creation of views/users/login.handlebars
+		* creation of views/users/register.handlebars
+	
+	028: register form validation:
+		* install bcrypt:
+		> npm install --save bcryptjs
+		*creation models/User:
+			//requires:
+			const mongoose = require("mongoose");
+			const Schema = mongoose.Schema;
+			//create Schema:
+			const UserSchema = new Schema({
+				"name":{
+					type:String,
+					required:true,
+				},
+				"email":{
+					type:String,
+					required:true,
+				}
+			});
+			//publish model:
+			mongoose.model("Users",UserSchema);		
+		
+		*routes/users.js:
+			const bcrypt = require('bcryptjs');			
+			// Load User Model:
+			require('../models/User');
+			const User = mongoose.model('Users');
+			// some Routes ..			
+			// handle register form
+			router.post("/register",(req,res)=>{
+				let errors=[];
+				if(req.body.password != req.body.password2)
+					errors.push({"text":"password do not match"});
+				
+				if(req.body.password.length < 4)
+					errors.push({"text":"password must be at least 8 characters"});
+				
+				if(errors.length > 0)
+					res.render("users/register",{
+						errors:errors,
+						name:req.body.name,
+						email:req.body.email,
+					});
+				else{
+					User.findOne({email:req.body.email})
+					.then(user=>{
+						if(user){
+							req.flash("error_msg","email already registred");
+							res.render("/users/login");
+						}else{
+							const newUser = new User({
+								name:req.body.name,
+								email:req.body.email,
+								password:req.body.password,
+								date:req.body.date,
+							});
+							
+							bcrypt.hash(newUser.password, 10, function(err, hash) {
+								if (err) throw err;
+								newUser.password=hash;
+								newUser
+								.save()
+								.then(user=>{
+									req.flash("success_msg","You are registered");
+									res.redirect("/users/login");			
+								}).catch(err=>{
+									console.log(err);
+									return;
+								});		  
+							});				
+						}
+					})
+				}
+				
+			});
+				
+	030: hooking up a local strategy:
+		* Installing passport and passport-local
+		> npm install --save passport passport-local
+		
+		* app.js : //Authentification implemented without file separation:
+		+const passport = require('passport');
+		+const LocalStrategy = require('passport-local').Strat
+		egy;
+		+const bcrypt = require("bcryptjs");
+
+		+// passport middleware must been puted after session middleware :
+		+app.use(passport.initialize());
+		+app.use(passport.session());
+
+		// handle login form:
+		app.post('/login',
+		  passport.authenticate('local', {
+			successRedirect: '/loginSuccess',
+			failureRedirect: '/loginFailure'
+		  })
+		);
+
+		app.get('/loginFailure', function(req, res, next) {
+		  res.send('Failed to authenticate');
+		});
+
+		app.get('/loginSuccess', function(req, res, next) {
+		  res.send('Successfully authenticated');
+		});
+
+		passport.serializeUser(function(user, done) {
+		  done(null, user);
+		  console.log("1",user);
+		});
+
+		passport.deserializeUser(function(user, done) {
+		  done(null, user);
+		  console.log("2",user);
+		});
+		// Load User Model:
+		require('./models/User');
+		const User = mongoose.model('Users');
+
+		passport.use(
+		new LocalStrategy({usernameField:'email'},function(email, password, done){
+		 
+			User.findOne({'email':email},function(err, user) {	
+				if (err) {
+					return done(err);
+				}
+				if (!user) {
+					return done(null, false);
+				}
+				if (!bcrypt.compareSync(password,user.password) ){
+					return done(null, false);
+				}
+				return done(null, user);  
+			});
+
+		}));
+		
+// ORGANISATION :
+--------Creation config/passport.js:
+const mongoose = require('mongoose');
+const bcrypt = require("bcryptjs");
+const LocalStrategy = require("passport-local").Strategy;
+const passport = require("passport");
+
+//-------------------------------------------------------
+
+// Load User Model:
+require('../models/User');
+const User = mongoose.model('Users');
+
+//-------------------------------------------------------
+
+module.exports=function(passport){
+	
+	passport.use(
+	new LocalStrategy({usernameField:'email'},function(email, password, done){
+
+		User.findOne({'email':email},function(err, user) {	
+			if (err)
+				return done(err);
+			if (!user)
+				return done(null, false,{message:"You are not registred"});
+			if (!bcrypt.compareSync(password,user.password) ){
+				return done(null, false,{message:"Missing email or password !"});
+			}
+			return done(null, user);  
+		});
+
+	}));
+
+	passport.serializeUser(function(user, done) {
+		console.log("SERIALIZE");
+		done(null, user.id);
+	});
+
+	passport.deserializeUser(function(id, done) {
+		console.log("DESERIALIZE");
+		User.findById(id, function(err, user) {
+		done(err, user);
+	  });
+	});	
+}
+--------routes/users.js:
+const passport = require("passport");
+//handle login form:
+router.post('/login',
+  passport.authenticate('local', {
+	successRedirect: '/ideas',
+	failureRedirect: '/users/login',
+	failureFlash:true,
+  })
+);
+--------app.js:
+//requires:
+const passport = require('passport');
+
+//middleware in use:
+// passport middleware :
+// !!! must been puted after session middleware:
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Gloabal Variables:
+res.locals.user = req.user || null;
+
+// at the end of the file, before app.listen:
+//call local-strategy:
+require("./config/passport")(passport);	
+	
+	031: finishing the login functionality: 
+		// updating the previous code:
+		030 + 031 in the same commit.
+	
+	032: logout function:
+		// implementing logout :
+		//logout
+		router.get("/logout",(req,res)=>{
+			   req.logout();
+			   req.flash("success_msg","You are Logged")
+			   res.redirect("/users/login");
+		});
+	
+	033: protecting routes:
+		*creation helpers/auth.js:
+			module.exports = {
+				ensureAuthenticated: function(req,res,next){
+					if(req.isAuthenticated()){
+						return next();
+					}
+					req.flash("error_msg","Not authorized access ");
+					res.redirect("/users/login");
+				}
+			}
+		
+		*routes/ideas.js:
+			// debut du fichier:
+			const {ensureAuthenticated} = require("../helpers/auth");
+			// in every route add the function ensureAuthenticated:
+			router.get("",ensureAuthenticated,(req,res)=>{...});
+			
+	034: access control:
+		//evry user can see only his videos:
+		*models/Idea.js:
+			//add a field to the table:
+			user:{
+				type:String,
+				required:true,
+			},
+			
+		*routes/ideas.js:
+		//find only user's videos:
+		// Ideas index page:
+		router.get("",ensureAuthenticated,(req,res)=>{
+			Idea.find({'user':req.user.id})
+			.sort({date:'desc'})
+			.then(ideas=>{
+				res.render("ideas/index",{
+					ideas: ideas,
+				});
+			})	
+		});		
+		// edit only users videos :
+		// edit Idea Form:
+		router.get("/edit/:id",ensureAuthenticated,(req,res)=>{	
+			Idea.findOne({
+				_id: req.params.id
+			})
+			.then(idea=> {
+				if (idea.user != req.user.id){
+					req.flash("error_msg","Not Allowed to touch this video");
+					res.redirect("/ideas");
+				}else{
+					res.render("ideas/edit",{
+						idea: idea,
+					});
+				}		
+			});
+		});	
+
+	035: preparing our app for deployement:
+		1) Creation d'une BD distante sur mlab.com.
+		2) Configuring package.json for the server start :
+			"scripts": {
+				"start": "node app.js"
+			}
+
+		3) Configuring environnement prod/dev pour la BD distante:
+		* creation de config/config.js :
+			const readline = require('readline');
+
+			const rl = readline.createInterface({
+			  input: process.stdin,
+			  output: process.stdout
+			});
+
+			module.exports = new Promise(res => {
+				rl.question('Run in production environnement (Y|N) ?', res);
+			}).then(answer => {        
+				if(answer === "Y")
+					process.env.NODE_ENV = 'prod';
+				else
+					process.env.NODE_ENV = 'dev';
+				rl.close();
+			});			
+		* creation de config/database.js :
+			if(process.env.NODE_ENV === 'prod'){
+				console.log("PROD Environnement");
+				module.exports = {
+					mongoURI : 'mongodb://karim:936R21Dg@ds235877.mlab.com:35877/vidjot-db-prod'
+				}
+			}else{
+				console.log("LOCAL Environnement");
+				module.exports= { 
+					mongoURI : 'mongodb://localhost/vidjot-db'
+				}
+			}		
+		
+		* app.js :
+			//---------------Start Server-----------------------
+			const port = process.env.PORT || 5000;
+			//call local-strategy:
+			require("./config/passport")(passport);
+
+			//config global:
+			config = require('./config/config'); //retourne une promise
+			config.then(function(res){
+				//DB config:
+				const db = require('./config/database');
+
+				//Connect to mongoose
+				mongoose.connect(db.mongoURI,{
+					useMongoClient: true
+				})
+				.then(function(){
+					console.log("MongoDB connected ...");
+				})
+				.catch(err => {
+					console.log("Mongo Connexion problem");
+					console.log(err);
+				});
+
+				app.listen(port,()=>{
+					console.log(`server started on port ${port}`);
+				});	
+			});
+			
+	036: deploying to heroku:
+		// heroku : host app in cloud.
+		* Install heroku in the machine
+		* open cmd (adminstrator mode)
+		* cd ProjectDirectory/
+		* heroku login (mail/pwd)
+		* heroku create
+		* git push heroku master
+		
+	037:	
+		* freenom.com => domaine free => set redirection to ugly heroku url => OK.
+		http://www.vidjot.gq/
+					
+chap 7: New App "StoryBook":
+	038: storybooks app introduction:
+		* Overview
+	039: intial setup heroku push:
+		* create a distant DB : storybooks-dev => Error
+		=> I'm using local.
 		
 	
 	
+When lunching the app on the server:
+* require and exports are loaded.
+* middleware are setting in used.
 		
+// Node's Documentation:  		
+https://nodejs.org/api/path.html
+http://www.tutorialsteacher.com/nodejs/nodejs-modules
+https://www.sitepoint.com/local-authentication-using-passport-node-js/
+Exples :
+https://codeforgeek.com/category/nodejs/express/
+
+//Body Parser:	
+	To handle HTTP POST request in Express.js version 4 and above, you need to install middleware module called body-parser.
+
+	body-parser extract the entire body portion of an incoming request stream and exposes it on req.body.
+
+	The middleware was a part of Express.js earlier but now you have to install it separately.
+
+//passport:
+It is designed to serve a singular purpose: authenticate requests.
+So Passport delegates all other functionality to the application. => Separation of code
 		
 
-
-
-
-		
-
-Android : 
+//Android : 
 	https://app.barmej.com/tracks/%D8%A8%D8%B1%D9%85%D8%AC%D8%A9-%D8%AA%D8%B7%D8%A8%D9%8A%D9%82%D8%A7%D8%AA-%D8%A7%D9%84%D8%A3%D9%86%D8%AF%D8%B1%D9%88%D9%8A%D8%AF-Android
