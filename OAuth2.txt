@@ -1,0 +1,61 @@
+	Authorisation protocol framework not only Authentification.
+
+
+$$Pluralsight:
+* Introduction:	
+	User => authentificate with FB in our App => OAuth2 => FB 
+	OurApp<=Token<=FB
+	
+* Sign in with google:
+	+Introduction:
+	+Setting up Passport Middleware:
+		>npm install --save express-session // for passport
+		>npm install --save passport
+		* app.js :
+		session = require("express-session");
+		passport= require("passport");
+		// Config Middleware
+		app.use(session({secret:"anythin"}));
+		app.use(passport.initialize());
+		app.use(passport.session());
+		passport.serializeUser(function(user,done){
+			done(null,user);
+		});
+		passport.deserializeUser(function(user,done){
+			// User.findById ... but mongoose not yet installed 
+			done(null,user);
+		});
+	+Finding a Google Strategy:
+		npmjs.com => search: passport google
+		choose the most downloaded => passport-google-oauth
+	+Using the Google Strategy:
+		> npm install --save passport-google-oauth
+		* app.js :
+		var GoogleStrategy = require("passport-google-oauth").OAuth2Strategy;
+		
+		passport.use(new GoogleStrategy({
+			//Google Identify ourApp with those two args
+			clientId:'',
+			clientSecret:'',
+			//once Authenticated, what google is going to --
+			callbackURL:'',
+			//when google sends some thing back to that callbackURL:
+			//when we have an authentificated URL, passport its self will send the user -out- google and when we got the result, it will call this function:
+			function(req,accessToken,refreshToken,profile,done){
+				done(null,profile);
+			}	
+		});
+	+Setting up You App with the Google Console:
+		go to console.developers.google.com:
+		Create new project: "OurApp"
+		API&auth>Credentials>create new client ID
+		
+		I didn't complete taking notes
+	+Setting up Our Auth Routes:
+	
+	+Creating Our Views:
+	
+	+Summary:
+		
+		
+		

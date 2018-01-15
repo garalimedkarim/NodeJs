@@ -754,13 +754,409 @@ chap 7: New App "StoryBook":
 	039: intial setup heroku push:
 		* create a distant DB : storybooks-dev => Error
 		=> I'm using local.
+		* create directory "storybooks"
+		> npm init
+		* package.json => update script start "node app.js"
+		> npm install --save express mongoose
+		> npm install -g nodemon // already installed because g=> globally
+		* To use Oauth for authentication, we have to deploy our application right now
+		> heroku login (admin cmd)
+		> heroku create
+		* go to heroku projects>open new project>deploy: git add remote heroku url...
+		> git push heroku master
+		> heroku open // open the url in your brower
 		
+	040: creating our google oauth credentials(%identite%}:
+		1) Register my App on https://console.cloud.google.com
+			* create empty project
+			* api & services> enable api&services > enable googleplus API
+			* credentials > create credentials > oauth create ID > 
+				+ Configure consent screen > set just Product name > save
+				+ Web Application
+					 Authorized JavaScript origins: http://localhost:5000
+					 Authorized redirect URIs:http://localhost:5000/auth/google/callback
+					 > save (or OK)
+					=> generation de googleClientId and googleClientSecret => put them in config file.
+		2) create config/key.js :
+			module.exports = {
+				mongoURI:'mongodb://karim:0000@ds135817.mlab.com:35817/storybooks_dev',
+				googleClientId:' 225636105689-ndipjmscbc3f9ruu78s54afhfmfg5k35.apps.googleusercontent.com ',
+				googleClientSecret:' Qmb9lF3Xz8S_J2mGDY2YL_9F ',
+			}
+	041: creating our google strategy
+		part1)
+			> npm install --save mongoose passport passport-google-oauth20		
+		part2)
+			*app.js:
+				const passport = require("passport");
+				//------------Middleware call------------
+				// Passport Config
+				require('./config/passport')(passport);
+			
+			*config/passport.js:
+				const GoogleStrategy = require("passport-google-oauth20").Strategy;
+				const mongoose = require("mongoose");
+				const keys = require("./keys");
+
+				module.exports = function(passport){
+					passport.use(
+						new GoogleStrategy({
+							clientID: keys.googleClientId,
+							clientSecret: keys.googleClientSecret,
+							callbackURL:'/auth/google/callback',
+							proxy:true, // for deploy https
+						},function(accesToken,refreshToken,profile,done){
+							console.log(accesToken);
+							console.log(profile);
+						})
+					);
+				}			
+			
+			*routes/auth.js:
+				// /auth/google (/auth:prefixe)
+				router.get('/google', passport.authenticate(
+					"google",
+					{scope:['profile','email']}
+					)
+				);
+
+	042: auth callback remote app:
+		*routes/auth.js:
+			//Intercepting google response callback
+			router.get('/google/callback',
+			  passport.authenticate('google',
+			       { failureRedirect: '/' }),
+			       function(req, res) {
+			       // Successful authentication, redirect home.
+			       res.redirect('/dashbord');
+			       }
+			  );
+		* In the google console : add remote application ROOT to enable it to communicate with OAuth.
+		
+	043: creating the user model
+		*create models/User.js:
+		*app.js:
+			// Mongoose Connexion:
+			//Load keys:
+			const keys = require('./config/keys');
+			//Connect:
+			mongoose.connect(keys.mongoURI)
+			.then(function(){
+				console.log("MongoDB Connected");
+			}).catch(err => console.log(err));	
+	044+045: saving the authenticated user+adding session authentification:
+		> npm install --save express-session cookie-parser:
+		/app.js: => Configuring passport with session&cookie
+		const session = require('express-session');
+		const cookieParser = require('cookie-parser');
+		//-------------My Middlewares---------------
+		app.use((req,res,next)=>{
+		       res.locals.user = req.user || null;
+		       next();
+		});
+		
+		//-------------Config Middlewares------------
+		// Cookie Parser:
+		app.use(cookieParser());
+		// express-session:
+		app.use(session({
+		       secret: 'keyboard cat',
+		       resave: false,
+		       saveUninitialized: true,
+		       cookie: { secure: true }
+		}));
+		// Passport
+		app.use(passport.initialize());
+		app.use(passport.session());
+				
+		/config/passport.js => Test if User don't exist Save User in the DB by GOOGLE DATA:
+		module.exports = function(passport){
+			passport.use(
+				new GoogleStrategy({
+					clientID: keys.googleClientId,
+					clientSecret: keys.googleClientSecret,
+					callbackURL:'/auth/google/callback',
+					proxy:true, // for deploy https
+				},function(accesToken,refreshToken,profile,done){
+		/*			console.log(accesToken);
+					console.log(profile);*/
+					const image = profile.photos[0].value.substring(0,profile.photos[0].value.indexOf('?'));
+					// Load User:
+					require("../models/User");
+					const User = mongoose.model("users");			
+					const newUser = {
+						googleID: profile.id,
+						firstName: profile.name.givenName,
+						lastName: profile.name.familyName,
+						email: profile.emails[0].value,
+						image: image
+					}
+					//Check for existing User
+					User.findOne({googleID: profile.id})
+					.then(user=>{
+						if(user)
+							done(null,user);
+						else{
+							//Create User:
+							new User(newUser)
+							.save()
+							.then(user=>done(null,user));
+						}
+					})
+				})
+			);
+
+			passport.serializeUser(function(user, done) {
+			  done(null, user.id);
+			});
+
+			passport.deserializeUser(function(id, done) {
+			  User.findById(id, function(err, user) {
+				done(err, user);
+			  });
+			});	
+		}
+		*routes/auth.js:
+		//add login route
+		router.get("/logout",(req,res)=>{
+			req.logout();
+			res.redirect("/");
+		})
+		
+		*Bonus git push heroku master => Google Cloud Plateform:
+		
+	046->051: 
+		1) Passport BUG!!!(user don't be saved in the session):
+			my middleware: res.locals has to be callen after passport configuration 
+		=> my middleware must be executed after core middlewares.
+		2) Systeme d'autorisation de page :
+		*creation fichier helpers/auth.js:
+			module.exports = {
+				ensureAuthenticated: function(req,res,next){
+					if(req.isAuthenticated()){
+						return next();
+					}
+					//req.flash("error_msg","Not authorized access ");
+					res.redirect("/");
+
+				},
+				ensureGuest: function(req,res,next){
+					if(req.isAuthenticated())
+						res.redirect("/dashbord");
+					else
+						return next();
+				}
+			}
+		3) Building UI (handlebars):
+		Html Editor: CKEditor CDN
+			
+	052: add story form: (view)
+		* views/stories/add.handlebars
+		
+	053: create the story model:
+	054: save story to mongodb:
+		1) install body-parser
+		2) * routes/stories.js:
+			router.post("/add",ensureAuthenticated,(req,res)=>{
+			  let allowComments;
+			  if(req.body.allowComments)
+				allowComments=true;
+			  else
+				allowComments=false;
+
+			  const newStory= {
+				title:req.body.title,
+				body:req.body.storyBody,
+				status:req.body.status,
+				allowComments:allowComments,
+				user:req.user.id
+			  }
+			  //Create Story:
+			  new Story(newStory)
+			  .save()
+			  .then(story=>{
+				res.redirect(`/stories/show/${story.id}`);
+			  });
+			});		
 	
+	055: fetch display public stories :
+		*routes/stories.js:
+			router.get("/",(req,res)=>{
+			  Story.find({status:'public'})
+			  .populate("user")
+			  .then(stories=>{
+			    res.render("stories/index",{stories:stories});
+			  })			
+			});
+		*views/stories/index.handlebars:
+			// display stories
+	
+	056: handlebars helpers:
+		* add cutom helper
+		
+	057: show template format date:
+		1) show route + show page UI
+		2) > npm install --save moment
+		moment to format Date.
+		
+	058: creating the dashbord:
+		*app.js :
+			+app.use(express.static('public'));
+		*routes/index.js:
+			router.get("/dashbord",(req,res)=>{
+			  Story.find({user:req.user.id})
+			  .then(stories=>{
+				res.render("index/dashbord",{
+				  stories:stories});
+			  })
+			});
+		3) dashbord UI.
+		
+	059: edit form select helper:
+		1) create select helper:
+		2) get edit route
+			router.get("/edit/:id",ensureAuthenticated,(req,res)=>{
+			  Story.findOne({ _id:req.params.id,
+							  user:req.user.id})
+			  .then(story=>{
+				if(story)
+				  res.render("stories/edit",{story:story});
+				else
+				  res.render("stories/index");
+			  })
+			});
+		3) edit UI
+	
+	060: updating stories:
+		1) method override post by put:
+		2) put route:
+			router.put("/edit/:id",ensureAuthenticated,(req,res)=>{
+				Story.findOne({ _id:req.params.id,
+								user:req.user.id})
+				.then(story=>{
+				  if(story){
+					let allowComments;
+					if(req.body.allowComments)
+					  allowComments=true;
+					else
+					  allowComments=false;
+
+					story.title=req.body.title;
+					story.status=req.body.status;
+					story.allowComments=allowComments;
+					story.body=req.body.storyBody;
+					story.save()
+					.then(story=>{
+					  res.redirect("/dashbord");
+					})
+				  }else
+					res.redirect("/stories/index");
+
+				});
+			});
+	061: deleting stories:
+		1) override post by delete
+		2) delete route:
+			router.delete("/delete/:id",(req,res)=>{
+			  Story.remove({ _id:req.params.id,
+							  user:req.user.id})
+			  .then(()=>{
+				res.redirect("/dashbord");
+			  });
+			})		
+	
+	062: add comment fonctionnalities :
+		1) add handlebars helper operator(AND,OR,etc)=> ifCond
+		2) create comments UI
+		3) routes/stories.js:
+			//comment add route
+			router.post("/comment/add/:id",ensureAuthenticated,(req,res)=>{
+
+			  Story.findOne({ _id:req.params.id,
+							  user:req.user.id})
+			  .then(story=>{
+				if(story && story.allowComment){
+				  //Create new Comment
+				  const newComment = {
+					commentBody : req.body.commentBody,
+					commentUser : req.user.id
+				  }
+				  //Push to stories comments array:
+				  story.comments.unshift(newComment);
+				  story.save()
+				  .then(story=>{
+					console.log(story.comments);
+					res.redirect(`/stories/show/${story.id}`);
+				  });
+				}
+			  });
+			});
+		
+	063: listing comments: 
+		1) Modify show route by adding populate to commentUser:
+			router.get("/show/:id",(req,res)=>{
+			  Story.findOne({_id:req.params.id})
+			  .populate("user")
+			  .populate("comments.commentUser")
+			  .then(story=>{
+				res.render("stories/show",{story:story});
+			  })
+			});
+		2) Modifying UI.
+		
+	064: edit access control
+		1) sort stories by date mongoose 
+			router.get("/",(req,res)=>{
+			  Story.find({status:'public'})
+			  .populate("user")
+			  .sort({date:'desc'})
+			  .then(stories=>{
+				res.render("stories/index",{stories:stories});
+			  });
+		2) handlebars: add helper "setVar"
+		3) correction acces control of edit(get+put methods) + add_comment(post)
+		4) stories/index: bouton edit show only for owner user.
+			
+	065: get stories from specific user:
+		1) add the route :
+			router.get("/user/:id",ensureAuthenticated,(req,res)=>{
+			  Story.find( { user:req.params.id,
+							status:"public"})
+			  .populate("user")
+			  .sort({date:"desc"})
+			  .then(stories=>{
+				res.render("stories/index",{stories:stories});
+			  })
+			  .catch(err=>res.redirect("/stories"));
+			});
+		
+		2) UI
+		
+	066: block private story details:
+		IGNORED
+		
+	067: prep producion key variables:
+		1) separating config/keys.js to two files:
+			* config/keys_dev.js
+			* config/keys_prod.js
+		
+		2) Creating Global Variables in our application heroku configs 
+			
+
+		
+			  
+		
+					
+		
+Warning:
+passport don't save in session => because global middleware must be called after passport config => Sol:My own middleware must be called after middlewares 	
 	
 When lunching the app on the server:
 * require and exports are loaded.
-* middleware are setting in used.
-		
+* use middleware => loaded once.
+// Passport Documentation :
+http://toon.io/understanding-passportjs-authentication-flow/
+
 // Node's Documentation:  		
 https://nodejs.org/api/path.html
 http://www.tutorialsteacher.com/nodejs/nodejs-modules
@@ -782,3 +1178,7 @@ So Passport delegates all other functionality to the application. => Separation 
 
 //Android : 
 	https://app.barmej.com/tracks/%D8%A8%D8%B1%D9%85%D8%AC%D8%A9-%D8%AA%D8%B7%D8%A8%D9%8A%D9%82%D8%A7%D8%AA-%D8%A7%D9%84%D8%A3%D9%86%D8%AF%D8%B1%D9%88%D9%8A%D8%AF-Android
+	
+// CSS flex box traversy : 
+https://www.youtube.com/watch?v=JJSoEo8JSnc
+// CSS traversy : grid layout CSS traversy media
